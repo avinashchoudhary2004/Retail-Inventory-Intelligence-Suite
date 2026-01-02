@@ -1,0 +1,2 @@
+demand_forecast,price,discount,Holiday_Promotion,weather_condition,seasonality,forecast_predicted_flag
+500,29.99,10,1,0,0,Accurate
