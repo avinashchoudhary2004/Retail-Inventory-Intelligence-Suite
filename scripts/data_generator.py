@@ -139,6 +139,87 @@ def generate_daily_batch(target_date=None):
     print(f"Successfully generated {len(df)} rows.")
     print(f"File saved to: {filename}")
 
+
+def generate_forecast_batch(target_date=None):
+    "Generates a 7-day batch of future demand predictions."
+    
+    # Define the 7-day horizon start (Tomorrow)
+    start_forecast_date = target_date + datetime.timedelta(days=1)
+    
+    rows = []
+    print(f"--- Generating 7-Day ML Inference Batch (Starting {start_forecast_date.strftime('%d/%m/%y')}) ---")
+
+    # Loop for next 7 days
+    for day_offset in range(7):
+        current_date = start_forecast_date + datetime.timedelta(days=day_offset)
+        date_str_csv = current_date.strftime("%d/%m/%y") # DD/MM/YY format
+        
+        # Seasonality Logic (Simple Lookup)
+        current_season = get_season(current_date) 
+
+        # Cartesian Product (Every Store x Every Product)
+        for store_id, region in STORES.items():
+            for prod_id, prod_info in PRODUCTS.items():
+                
+                # --- Feature Simulation ---
+                
+                # 1. Future Price (Price might fluctuate slightly in the future)
+                base_price = prod_info["BasePrice"]
+                price_variance = random.uniform(0.95, 1.05) # +/- 5% variance
+                final_price = round(base_price * price_variance, 2)
+                
+                # 2. Competitor Price
+                comp_price = round(final_price * random.uniform(0.95, 1.05), 2)
+                
+                # 3. Weather & Events (Randomized for the future)
+                weather = random.choice(WEATHER_OPTS)
+                is_promo = random.choice([0, 0, 0, 0, 1]) # 20% chance of promo
+                
+                # --- The ML Model Simulation ---
+                estimated_vol = max(10, int(2000 / base_price)) 
+                
+                # Multipliers
+                promo_lift = 1.3 if is_promo == 1 else 1.0
+                weather_lift = 1.1 if weather == "Rainy" and prod_info["Category"] == "Clothing" else 1.0
+                season_lift = 1.2 if current_season == "Winter" and prod_info["Category"] == "Electronics" else 1.0
+                
+                # Final Forecast Calculation with ML "Confidence Noise"
+                ml_confidence = random.uniform(0.9, 1.1)
+                predicted_qty = (estimated_vol * promo_lift * weather_lift * season_lift * ml_confidence)
+                
+                # Formatting to 2 decimals (ML output usually has decimals)
+                predicted_qty = round(predicted_qty, 2)
+
+                # --- Create Row ---
+                row = {
+                    "Forecasted On": target_date.strftime("%d/%m/%y"),
+                    "Date": date_str_csv,
+                    "Store ID": store_id,
+                    "Product ID": prod_id,
+                    "Category": prod_info["Category"],
+                    "Region": region,
+                    "Price": final_price,
+                    "Discount": random.choice(DISCOUNT_OPTS),
+                    "Weather Condition": weather,
+                    "Holiday/Promotion": is_promo,
+                    "Competitor Pricing": comp_price,
+                    "Seasonality": current_season,
+                    "Demand Forecast": predicted_qty # The key output column
+                }
+                rows.append(row)
+
+    # Save Data
+    df = pd.DataFrame(rows)
+    
+    # File naming: 'forecast_batch_YYYYMMDD.csv' representing the RUN DATE
+    file_date_str = target_date.strftime("%Y%m%d")
+    filename = OUTPUT_DIR / f"forecast_batch_{file_date_str}.csv"
+    
+    df.to_csv(filename, index=False)
+    print(f"Successfully generated {len(df)} predictions (7 Days x {len(STORES)} Stores x {len(PRODUCTS)} Products).")
+    print(f"File saved to: {filename}")
+
+
 if __name__ == "__main__":
     # Example: Generate data for a specific simulation date
     # You can change this date to test the pipeline

@@ -1,63 +1,60 @@
-2026-01-02 23:00:10 - INFO - === ETL PIPELINE START ===
-2026-01-02 23:00:10 - INFO - --- [STEP 1] Generating Daily Data ---
-2026-01-02 23:00:10 - INFO - Data generation complete for 2024-01-01
-2026-01-02 23:00:10 - INFO - --- [STEP 2] Loading Raw Data to Postgres ---
-2026-01-02 23:00:10 - INFO - Processing file: 20240101.csv
-2026-01-02 23:00:10 - INFO - Successfully loaded 150 rows to raw.inventory_dump
-2026-01-02 23:00:10 - INFO - --- [STEP 3] Running SQL Transformations ---
-2026-01-02 23:00:10 - INFO - Executing: 03_daily_batch_load.sql
-2026-01-02 23:00:10 - INFO - Finished: 03_daily_batch_load.sql
-2026-01-02 23:00:10 - INFO - Executing: 04_analytics_marts.sql
-2026-01-02 23:00:10 - INFO - Finished: 04_analytics_marts.sql
-2026-01-02 23:00:10 - INFO - --- [STEP 4] Archiving File ---
-2026-01-02 23:00:10 - INFO - Moved 20240101.csv to /Users/anni/Downloads/Stocksmart Project/data/archive
-2026-01-02 23:00:10 - INFO - --- [STEP 5] Updating Analytics Tables ---
-2026-01-02 23:00:12 - INFO - Updated reporting tables
-2026-01-02 23:00:12 - INFO - === ETL PIPELINE SUCCESS ===
-2026-01-02 23:01:21 - INFO - === ETL PIPELINE START ===
-2026-01-02 23:01:21 - INFO - --- [STEP 1] Generating Daily Data ---
-2026-01-02 23:01:21 - INFO - Data generation complete for 2024-01-02
-2026-01-02 23:01:21 - INFO - --- [STEP 2] Loading Raw Data to Postgres ---
-2026-01-02 23:01:21 - INFO - Processing file: 20240102.csv
-2026-01-02 23:01:22 - INFO - Successfully loaded 150 rows to raw.inventory_dump
-2026-01-02 23:01:22 - INFO - --- [STEP 3] Running SQL Transformations ---
-2026-01-02 23:01:22 - INFO - Executing: 03_daily_batch_load.sql
-2026-01-02 23:01:22 - INFO - Finished: 03_daily_batch_load.sql
-2026-01-02 23:01:22 - INFO - Executing: 04_analytics_marts.sql
-2026-01-02 23:01:22 - INFO - Finished: 04_analytics_marts.sql
-2026-01-02 23:01:22 - INFO - --- [STEP 4] Archiving File ---
-2026-01-02 23:01:22 - INFO - Moved 20240102.csv to /Users/anni/Downloads/Stocksmart Project/data/archive
-2026-01-02 23:01:22 - INFO - --- [STEP 5] Updating Analytics Tables ---
-2026-01-02 23:01:23 - INFO - Updated reporting tables
-2026-01-02 23:01:23 - INFO - === ETL PIPELINE SUCCESS ===
-2026-01-02 23:01:31 - INFO - === ETL PIPELINE START ===
-2026-01-02 23:01:31 - INFO - --- [STEP 1] Generating Daily Data ---
-2026-01-02 23:01:31 - INFO - Data generation complete for 2024-01-03
-2026-01-02 23:01:31 - INFO - --- [STEP 2] Loading Raw Data to Postgres ---
-2026-01-02 23:01:31 - INFO - Processing file: 20240103.csv
-2026-01-02 23:01:31 - INFO - Successfully loaded 150 rows to raw.inventory_dump
-2026-01-02 23:01:31 - INFO - --- [STEP 3] Running SQL Transformations ---
-2026-01-02 23:01:31 - INFO - Executing: 03_daily_batch_load.sql
-2026-01-02 23:01:31 - INFO - Finished: 03_daily_batch_load.sql
-2026-01-02 23:01:31 - INFO - Executing: 04_analytics_marts.sql
-2026-01-02 23:01:31 - INFO - Finished: 04_analytics_marts.sql
-2026-01-02 23:01:31 - INFO - --- [STEP 4] Archiving File ---
-2026-01-02 23:01:31 - INFO - Moved 20240103.csv to /Users/anni/Downloads/Stocksmart Project/data/archive
-2026-01-02 23:01:31 - INFO - --- [STEP 5] Updating Analytics Tables ---
-2026-01-02 23:01:33 - INFO - Updated reporting tables
-2026-01-02 23:01:33 - INFO - === ETL PIPELINE SUCCESS ===2026-01-02 23:08:37 - INFO - === ETL PIPELINE START ===
-2026-01-02 23:08:37 - INFO - --- [STEP 1] Generating Daily Data ---
-2026-01-02 23:08:37 - INFO - Data generation complete for 2024-01-03
-2026-01-02 23:08:37 - INFO - --- [STEP 2] Loading Raw Data to Postgres ---
-2026-01-02 23:08:37 - INFO - Processing file: 20240103.csv
-2026-01-02 23:08:37 - INFO - Successfully loaded 150 rows to raw.inventory_dump
-2026-01-02 23:08:37 - INFO - --- [STEP 3] Running SQL Transformations ---
-2026-01-02 23:08:37 - INFO - Executing: 03_daily_batch_load.sql
-2026-01-02 23:08:37 - INFO - Finished: 03_daily_batch_load.sql
-2026-01-02 23:08:37 - INFO - Executing: 04_analytics_marts.sql
-2026-01-02 23:08:37 - INFO - Finished: 04_analytics_marts.sql
-2026-01-02 23:08:37 - INFO - --- [STEP 4] Archiving File ---
-2026-01-02 23:08:37 - INFO - Moved 20240103.csv to /Users/anni/Downloads/Stocksmart Project/data/archive
-2026-01-02 23:08:37 - INFO - --- [STEP 5] Updating Analytics Tables ---
-2026-01-02 23:08:38 - INFO - Updated reporting tables
-2026-01-02 23:08:38 - INFO - === ETL PIPELINE SUCCESS ===
+2026-01-06 23:39:23 - INFO - === ETL PIPELINE START ===
+2026-01-06 23:39:23 - INFO - --- [STEP 1] Generating Daily Data ---
+2026-01-06 23:39:23 - INFO - Data generation complete for 2023-12-25
+2026-01-06 23:39:23 - INFO - --- [STEP 2] Loading Raw Data to Postgres ---
+2026-01-06 23:39:23 - INFO - Processing file: 20231225.csv
+2026-01-06 23:39:23 - INFO - Loaded 150 rows into [raw.inventory_dump]
+2026-01-06 23:39:23 - INFO - Processing file: forecast_batch_20231225.csv
+2026-01-06 23:39:23 - INFO - Truncating [raw.demand_forecast_7d] for fresh snapshot...
+2026-01-06 23:39:24 - INFO - Loaded 1050 rows into [raw.demand_forecast_7d]
+2026-01-06 23:39:24 - INFO - --- [STEP 3] Running SQL Transformations ---
+2026-01-06 23:39:24 - INFO - Executing: 03_daily_batch_load.sql
+2026-01-06 23:39:24 - INFO - Finished: 03_daily_batch_load.sql
+2026-01-06 23:39:24 - INFO - Executing: 04_analytics_marts.sql
+2026-01-06 23:39:24 - INFO - Finished: 04_analytics_marts.sql
+2026-01-06 23:39:24 - INFO - --- [STEP 4] Archiving File ---
+2026-01-06 23:39:24 - INFO - Moved 20231225.csv to /Users/anni/Downloads/Stocksmart Project/data/archive
+2026-01-06 23:39:24 - INFO - Moved forecast_batch_20231225.csv to /Users/anni/Downloads/Stocksmart Project/data/archive
+2026-01-06 23:39:24 - INFO - --- [STEP 5] Updating Analytics Tables ---
+2026-01-06 23:39:24 - INFO - Updated reporting tables
+2026-01-06 23:39:24 - INFO - === ETL PIPELINE SUCCESS ===
+2026-01-06 23:41:33 - INFO - === ETL PIPELINE START ===
+2026-01-06 23:41:33 - INFO - --- [STEP 1] Generating Daily Data ---
+2026-01-06 23:41:33 - INFO - Data generation complete for 2023-12-26
+2026-01-06 23:41:33 - INFO - --- [STEP 2] Loading Raw Data to Postgres ---
+2026-01-06 23:41:33 - INFO - Processing file: 20231226.csv
+2026-01-06 23:41:33 - INFO - Loaded 150 rows into [raw.inventory_dump]
+2026-01-06 23:41:33 - INFO - Processing file: forecast_batch_20231226.csv
+2026-01-06 23:41:33 - INFO - Truncating [raw.demand_forecast_7d] for fresh snapshot...
+2026-01-06 23:41:34 - INFO - Loaded 1050 rows into [raw.demand_forecast_7d]
+2026-01-06 23:41:34 - INFO - --- [STEP 3] Running SQL Transformations ---
+2026-01-06 23:41:34 - INFO - Executing: 03_daily_batch_load.sql
+2026-01-06 23:41:34 - INFO - Finished: 03_daily_batch_load.sql
+2026-01-06 23:41:34 - INFO - Executing: 04_analytics_marts.sql
+2026-01-06 23:41:34 - INFO - Finished: 04_analytics_marts.sql
+2026-01-06 23:41:34 - INFO - --- [STEP 4] Archiving File ---
+2026-01-06 23:41:34 - INFO - Moved 20231226.csv to /Users/anni/Downloads/Stocksmart Project/data/archive
+2026-01-06 23:41:34 - INFO - Moved forecast_batch_20231226.csv to /Users/anni/Downloads/Stocksmart Project/data/archive
+2026-01-06 23:41:34 - INFO - --- [STEP 5] Updating Analytics Tables ---
+2026-01-06 23:41:34 - INFO - Updated reporting tables
+2026-01-06 23:41:34 - INFO - === ETL PIPELINE SUCCESS ===
+2026-01-06 23:54:44 - INFO - === ETL PIPELINE START ===
+2026-01-06 23:54:44 - INFO - --- [STEP 1] Generating Daily Data ---
+2026-01-06 23:54:44 - INFO - Data generation complete for 2023-12-27
+2026-01-06 23:54:44 - INFO - --- [STEP 2] Loading Raw Data to Postgres ---
+2026-01-06 23:54:44 - INFO - Processing file: 20231227.csv
+2026-01-06 23:54:44 - INFO - Loaded 150 rows into [raw.inventory_dump]
+2026-01-06 23:54:44 - INFO - Processing file: forecast_batch_20231227.csv
+2026-01-06 23:54:44 - INFO - Truncating [raw.demand_forecast_7d] for fresh snapshot...
+2026-01-06 23:54:44 - INFO - Loaded 1050 rows into [raw.demand_forecast_7d]
+2026-01-06 23:54:44 - INFO - --- [STEP 3] Running SQL Transformations ---
+2026-01-06 23:54:44 - INFO - Executing: 03_daily_batch_load.sql
+2026-01-06 23:54:44 - INFO - Finished: 03_daily_batch_load.sql
+2026-01-06 23:54:44 - INFO - Executing: 04_analytics_marts.sql
+2026-01-06 23:54:44 - INFO - Finished: 04_analytics_marts.sql
+2026-01-06 23:54:44 - INFO - --- [STEP 4] Archiving File ---
+2026-01-06 23:54:44 - INFO - Moved 20231227.csv to /Users/anni/Downloads/Stocksmart Project/data/archive
+2026-01-06 23:54:44 - INFO - Moved forecast_batch_20231227.csv to /Users/anni/Downloads/Stocksmart Project/data/archive
+2026-01-06 23:54:44 - INFO - --- [STEP 5] Updating Analytics Tables ---
+2026-01-06 23:54:44 - INFO - Updated reporting tables
+2026-01-06 23:54:44 - INFO - === ETL PIPELINE SUCCESS ===

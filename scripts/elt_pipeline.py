@@ -8,8 +8,8 @@ import psycopg2
 from sqlalchemy import create_engine, text
 
 # Import your local generator script
-from data_generator import generate_daily_batch
-from config.db_config import DB_CONFIG
+from scripts.data_generator import generate_daily_batch, generate_forecast_batch
+from scripts.config.db_config import DB_CONFIG
 
 # Construct Connection String using the imported credentials
 DB_CONN_STR = f"postgresql+psycopg2://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}"
@@ -26,7 +26,6 @@ SQL_FILES = [
 ]
 
 # 3. Setup Logging
-# This block tells Python: "Write everything to a file named pipeline_execution.log"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(
     filename=LOG_DIR / "pipeline_execution.log",
@@ -43,49 +42,67 @@ logging.getLogger('').addHandler(console)
 
 # ------------------- PIPELINE STEPS ---------------
 
-# Step 1: Getting the data from oltp (for this project we are simulating the oltp data)
-def step_1_generate_data():
+# Getting the data from oltp (for this project we are simulating the oltp data)
+def step_1_generate_data(simulation_date):
     logging.info("--- [STEP 1] Generating Daily Data ---")
     
     try:
-        simulation_date = datetime.date(2024,1,3)
         generate_daily_batch(simulation_date)
+        generate_forecast_batch(simulation_date)
         logging.info(f"Data generation complete for {simulation_date}")
     except Exception as e:
         logging.error(f"Generation Failed: {e}")
         raise e 
 
+
 def step_2_load_raw(engine):
     logging.info("--- [STEP 2] Loading Raw Data to Postgres ---")
+    
     incoming_files = list((DATA_DIR / "daily_incoming_data").glob("*.csv"))
 
+    if not incoming_files:
+        logging.warning("No new files found. Skipping.")
+        return []
+
+    processed_files = []
+
     try:
-        # Check if there is any file in incoming folder
-        if not incoming_files:
-            logging.warning("No new files found in data/incoming. Skipping load.")
-            return None
+        # Open a connection for SQL execution
+        with engine.begin() as conn:
+            for file_path in incoming_files:
+                logging.info(f"Processing file: {file_path.name}")
 
-        # Get the latest file
-        latest_file = max(incoming_files, key=os.path.getctime)
-        logging.info(f"Processing file: {latest_file.name}")
+                # 1. Routing & Cleaning Logic
+                if "forecast_batch" in file_path.name:
+                    target_table = "demand_forecast_7d"
+                    logging.info(f"Truncating [raw.{target_table}] for fresh snapshot...")
+                    conn.execute(text(f"TRUNCATE TABLE raw.{target_table}"))
+                else:
+                    target_table = "inventory_dump"
 
-        df = pd.read_csv(latest_file)
-        
-        df.to_sql(
-            name='inventory_dump',
-            con=engine,
-            schema='raw',
-            if_exists='append', 
-            index=False,
-            method='multi',
-            chunksize=1000 
-        )
-        logging.info(f"Successfully loaded {len(df)} rows to raw.inventory_dump")
-        return latest_file
+                # 2. Read CSV (Force All to String to match 'TEXT' schema)
+                df = pd.read_csv(file_path, dtype=str)
+                
+                # 3. Load to Postgres
+                df.to_sql(
+                    name=target_table,
+                    con=conn,           
+                    schema='raw',
+                    if_exists='append',   
+                    index=False,
+                    method='multi',
+                    chunksize=1000 
+                )
+                
+                logging.info(f"Loaded {len(df)} rows into [raw.{target_table}]")
+                processed_files.append(file_path)
+
+        return processed_files
 
     except Exception as e:
         logging.error(f"Raw Load Failed: {e}")
         raise e
+
 
 def step_3_run_transformations(engine):
     logging.info("--- [STEP 3] Running SQL Transformations ---")
@@ -105,23 +122,24 @@ def step_3_run_transformations(engine):
                     
                 conn.execute(text(sql_script))
                 logging.info(f"Finished: {sql_path.name}")
-                
+
     except Exception as e:
         logging.error(f"Transformation Failed: {e}")
         raise e
 
-def step_4_archive_file(file_path):
-    # Moves the file to archive so we don't process it twice.
-    if not file_path: return
+
+def step_4_archive_file(processed_file):
+    if not processed_file: return
 
     logging.info("--- [STEP 4] Archiving File ---")
     archive_dir = DATA_DIR / "archive"
     archive_dir.mkdir(parents=True, exist_ok=True)
     
     try:
-        destination = archive_dir / file_path.name
-        shutil.move(str(file_path), str(destination))
-        logging.info(f"Moved {file_path.name} to {archive_dir}")
+        for file_path in processed_file:
+            destination = archive_dir / file_path.name
+            shutil.move(str(file_path), str(destination))
+            logging.info(f"Moved {file_path.name} to {archive_dir}")
     except Exception as e:
         logging.error(f"Archiving Failed: {e}")
 
@@ -143,36 +161,35 @@ def step_5_updating_analytics_tables(engine):
         for name in rpt_tables.iloc[:,0]:
             path = dest_dirt / (name + ".csv")
             table = pd.read_sql_table(name, engine, "rpt")
-            table.to_csv(path)
+            table.to_csv(path, index=False)
 
         logging.info(f"Updated reporting tables")
 
     except Exception as e:
         logging.error(f"Updating reporting tables failed: {e}")
 
-# MAIN
 
-def main():
+# MAIN
+def run_pipeline(simulation_date):
     logging.info("=== ETL PIPELINE START ===")
     
     try:
         engine = create_engine(DB_CONN_STR)
 
-        step_1_generate_data()
+        step_1_generate_data(simulation_date)
         
         processed_file = step_2_load_raw(engine)
         
         if processed_file:
             step_3_run_transformations(engine)
             step_4_archive_file(processed_file)
-            # step_5_updating_analytics_tables(engine)
+            step_5_updating_analytics_tables(engine)
             
         logging.info("=== ETL PIPELINE SUCCESS ===")
         
     except Exception as e:
-        # LOGGING: CRITICAL means the pipeline died completely. 
         logging.critical(f"=== ETL PIPELINE CRASHED ===\nError: {e}")
         exit(1)
 
 if __name__ == "__main__":
-    main()
+    run_pipeline()

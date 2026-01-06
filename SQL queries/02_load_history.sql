@@ -36,8 +36,7 @@ from (
 );
 
 -- 4. Insert historic date into fct_inventory_daily
-INSERT INTO dwh.fct_inventory_daily(date_key, store_key, product_key, inventory_level, units_sold, units_ordered, 
-	demand_forecast, selling_price, discount_applied, competitor_price, weather_condition, is_promotion_active)
+INSERT INTO dwh.fct_inventory_daily(date_key, store_key, product_key, inventory_level, units_sold, units_ordered, demand_forecast, selling_price, discount_applied, competitor_price, weather_condition, is_promotion_active)
 SELECT 
     TO_CHAR(TO_DATE(r."Date", 'DD/MM/YY'), 'YYYYMMDD')::INT as date_key,
     s.store_key,
@@ -58,5 +57,3 @@ JOIN dwh.dim_store s ON r."Store ID" = s.store_id
 JOIN dwh.dim_product p ON r."Product ID" = p.product_id
 ON CONFLICT (date_key, product_key, store_key) DO NOTHING
 ;
-
-

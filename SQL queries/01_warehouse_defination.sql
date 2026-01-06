@@ -8,7 +8,7 @@ CREATE SCHEMA IF NOT EXISTS raw; -- Loading the raw data from python script
 CREATE SCHEMA IF NOT EXISTS dwh; -- Warehouse Core (dimension + facts)
 CREATE SCHEMA IF NOT EXISTS rpt; -- Reporting/Analytics (snapshots for dashboards and decision making)
 
--- 2. Create the RAW Table (Matches CSV columns exactly)
+-- 2. Create the RAW Tables (Matches CSV columns exactly)
 CREATE TABLE raw.inventory_dump (
     "Date" TEXT,
     "Store ID" TEXT,
@@ -25,6 +25,23 @@ CREATE TABLE raw.inventory_dump (
     "Holiday/Promotion" TEXT,
     "Competitor Pricing" TEXT,
     "Seasonality" TEXT
+);
+
+-- Next 7-Day Demand Forecast (Model Inference) 
+CREATE TABLE raw.demand_forecast_7d (
+    "Forecasted On" Text,
+    "Date" Text,
+    "Store ID" TEXT,
+    "Product ID" TEXT,
+    "Category" TEXT,
+    "Region" TEXT,
+    "Price" TEXT,
+    "Discount" TEXT,
+    "Weather Condition" TEXT,
+    "Holiday/Promotion" TEXT,
+    "Competitor Pricing" TEXT,
+    "Seasonality" TEXT,
+    "Demand Forecast" TEXT
 );
 
 -- 3. Create the dwh tables
@@ -84,4 +101,21 @@ CREATE TABLE dwh.fct_inventory_daily (
     CONSTRAINT fk_inv_daily_product 
         FOREIGN KEY (product_key) 
         REFERENCES dwh.dim_product(product_key)
+);
+
+-- (e) Next 7-Day Demand Forecast
+CREATE TABLE dwh.demand_forecast_7d (
+    forecasted_on Date,
+    full_date Date,
+    store_id  VARCHAR(10),
+    product_id  VARCHAR(10),
+    category VARCHAR(50),
+    region VARCHAR(50),
+    selling_price DECIMAL(10,2),
+    discount_applied DECIMAL(10,2),
+    weather_condition VARCHAR(50),
+	is_promotion_active boolean,
+    competitor_price DECIMAL(10,2),
+    season VARCHAR(20),
+    demand_forecast DECIMAL(10,2)
 );

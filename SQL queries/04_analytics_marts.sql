@@ -6,6 +6,7 @@
   2. view_inventory_health_final     - Current stock status & alerts
   3. view_forecast_accuracy_daily    - ML Model performance monitoring
   4. view_inventory_turnover_monthly - Capital efficiency & turnover rates
+  5. next_7d_demand                  - Next 7d demand forecast
 ================================================================================
 */
 
@@ -17,8 +18,9 @@ select d.full_date,
 	p.product_id,
 	p.category,
 	f.units_sold,
+    f.inventory_level,
 	f.units_ordered,
-	f.inventory_level,
+    f.demand_forecast,
 	f.selling_price,
 	f.discount_applied,
 	f.weather_condition,
@@ -66,64 +68,82 @@ SELECT
 FROM monthly_stats
 ;
 
-select * from dwh.dim_date;
-
 -- 3. Inventory status
--- Logic: 
---   1. Historical DoS = Inventory / (7-Day Avg Sales)
---   2. Forecast Ratio = Inventory / (Next Day Forecast)
 CREATE OR REPLACE VIEW rpt.inventory_health AS
 WITH max_fact_date AS (
     SELECT MAX(d.full_date) AS max_date
     FROM dwh.fct_inventory_daily f
     JOIN dwh.dim_date d ON f.date_key = d.date_key
-),
-velocity_7d AS (
-    SELECT 
-        f.store_key,
-        f.product_key,
-        SUM(f.units_sold)::numeric / 7 AS avg_daily_sales_7d
-    FROM dwh.fct_inventory_daily f
-    JOIN dwh.dim_date d ON f.date_key = d.date_key
-    CROSS JOIN max_fact_date m
-    WHERE d.full_date > m.max_date - INTERVAL '7 days'
-    GROUP BY f.store_key, f.product_key
+), forecasted_demand AS (
+	SELECT 
+	    d.full_date,
+	    s.store_id,
+		s.region,
+		p.product_id,
+	    p.category,
+		f.inventory_level,
+		f.units_ordered,
+	    f.inventory_level + f.units_ordered AS effective_inventory_level,
+		n.full_date AS forecasted_for,
+	    sum(n.demand_forecast) over(partition by s.store_id, p.product_id order by n.full_date) as running_total,
+		row_number() over(partition by s.store_id, p.product_id order by n.full_date) as rn,
+		CASE
+			WHEN f.inventory_level + f.units_ordered < sum(n.demand_forecast) over(partition by s.store_id, p.product_id order by n.full_date)
+				THEN TRUE
+			ELSE FALSE
+		END AS is_less_than_demand
+	FROM dwh.fct_inventory_daily f
+	JOIN dwh.dim_date d ON f.date_key = d.date_key
+	JOIN dwh.dim_store s ON f.store_key = s.store_key
+	JOIN dwh.dim_product p ON f.product_key = p.product_key
+	JOIN max_fact_date m ON m.max_date = d.full_date
+	JOIN dwh.demand_forecast_7d n ON n.store_id = s.store_id AND n.product_id = p.product_id
+), DoS AS (
+	SELECT
+		store_id,
+		product_id,
+		MIN(round(rn + (running_total - effective_inventory_level)/running_total,1)) AS DoS
+	FROM forecasted_demand
+	WHERE is_less_than_demand = True
+	GROUP BY 1,2
 )
 SELECT 
-    d.full_date,
-    s.store_id,
-    s.region,
-	p.product_id,
-    p.category,
-    f.inventory_level + f.units_ordered as effective_inventory_level,
-    ROUND(v.avg_daily_sales_7d, 1) AS hist_velocity_daily,
-    CASE 
-        WHEN v.avg_daily_sales_7d = 0 THEN 999 
-        ELSE ROUND((f.inventory_level + f.units_ordered)/ v.avg_daily_sales_7d, 1) 
-    END AS historical_dos,
-    f.demand_forecast AS next_day_demand,-- this need to be replaced for next day demand got from ml model
-    CASE 
-        WHEN f.demand_forecast = 0 THEN 999
-        ELSE ROUND(f.inventory_level / f.demand_forecast, 2)
-    END AS forecast_coverage_ratio,
-    CASE 
-        WHEN (f.inventory_level + f.units_ordered) = 0 and v.avg_daily_sales_7d <> 0 THEN 'STOCKOUT'
-		WHEN (f.inventory_level + f.units_ordered) > 0 and v.avg_daily_sales_7d = 0 THEN 'DEAD STOCK'
-		WHEN (f.inventory_level + f.units_ordered) = 0 and v.avg_daily_sales_7d = 0 THEN 'INACTIVE'
-        WHEN ((f.inventory_level + f.units_ordered) / NULLIF(v.avg_daily_sales_7d, 0)) < 1 THEN 'CRITICAL'
-        WHEN ((f.inventory_level + f.units_ordered) / NULLIF(v.avg_daily_sales_7d, 0)) < 2 THEN 'LOW STOCK'
-        WHEN ((f.inventory_level + f.units_ordered) / NULLIF(v.avg_daily_sales_7d, 0)) < 5 THEN 'HEALTHY'
-        WHEN ((f.inventory_level + f.units_ordered) / NULLIF(v.avg_daily_sales_7d, 0)) >= 5 THEN 'OVERSTOCK'
-        ELSE 'UNKNOWN'
-    END AS inventory_health_status
-FROM dwh.fct_inventory_daily f
-JOIN velocity_7d v ON f.store_key = v.store_key AND f.product_key = v.product_key
-JOIN dwh.dim_date d ON f.date_key = d.date_key
-JOIN dwh.dim_store s ON f.store_key = s.store_key
-JOIN dwh.dim_product p ON f.product_key = p.product_key
-Join max_fact_date m on m.max_date = d.full_date
+	f.full_date,
+	f.store_id,
+	f.region,
+	f.product_id,
+	f.category,
+	f.inventory_level,
+	f.units_ordered,
+	f.inventory_level + f.units_ordered AS effective_inventory,
+	d.DoS,
+	running_total as next_day_demand,
+	CASE
+        WHEN running_total > inventory_level AND DoS < 1 THEN 'Critical'
+        WHEN running_total > inventory_level AND DoS >= 1 THEN 'Critical'
+        WHEN DoS >= 1 AND DoS < 2 THEN 'Low'
+        WHEN DoS >= 2 AND DoS <= 4 THEN 'Healthy'
+        WHEN DoS > 4 THEN 'Overstocked'
+    END AS inventory_health_status,
+	CASE
+        WHEN running_total > inventory_level AND DoS < 1 THEN 'Order more and deliver by tomorrow'
+        WHEN running_total > inventory_level AND DoS >= 1 THEN 'Deliver by tomorrow'
+        WHEN DoS >= 1 AND DoS < 2 THEN 'Order more'
+        WHEN DoS > 4 AND units_ordered > 0 THEN 'Cancel or reduce order'
+        WHEN DoS > 4 AND units_ordered = 0 THEN 'Run discount'
+        ELSE 'No action'
+    END AS inventory_action_required,
+	CASE
+        WHEN running_total > inventory_level AND DoS < 1 THEN 1
+        WHEN running_total > inventory_level AND DoS >= 1 THEN 2
+        WHEN DoS >= 1 AND DoS < 2 THEN 3
+        WHEN DoS >= 2 AND DoS <= 4 THEN 5
+        WHEN DoS > 4 THEN 4
+    END AS severity_level
+FROM forecasted_demand f
+JOIN DoS d ON d.store_id = f.store_id AND d.product_id = f.product_id 
+WHERE rn = 1
 ;
-
 
 -- 4. Forecast deviation
 CREATE OR REPLACE VIEW rpt.forecast_deviation AS
@@ -134,11 +154,11 @@ SELECT
     p.product_id,
 	p.category,
     f.units_sold AS actual_sold,
-    round(f.demand_forecast) AS forecasted_demand,
-    round(f.demand_forecast - f.units_sold) AS deviation_units,
+    round(f.demand_forecast,2) AS forecasted_demand,
+    round(f.demand_forecast - f.units_sold, 2) AS deviation_units,
     CASE 
         WHEN f.units_sold = 0 THEN Null 
-        ELSE ROUND(ABS(f.demand_forecast - f.units_sold)::numeric / f.units_sold*100,2)
+        ELSE ROUND(100*ABS(f.demand_forecast - f.units_sold)::DECIMAL / f.units_sold,2)
     END AS error_pct,
     CASE 
         WHEN f.units_sold = 0 AND f.demand_forecast = 0 THEN 'ACCURATE'
@@ -152,4 +172,23 @@ FROM dwh.fct_inventory_daily f
 JOIN dwh.dim_date d ON f.date_key = d.date_key
 JOIN dwh.dim_store s ON f.store_key = s.store_key
 JOIN dwh.dim_product p ON f.product_key = p.product_key
+;
+
+-- 5. Next 7d forecast
+CREATE OR REPLACE VIEW rpt.next_7d_demand AS
+SELECT 
+    forecasted_on,
+    full_date,
+    store_id,
+    product_id,
+    category,
+    region,
+    selling_price,
+    discount_applied,
+    weather_condition,
+    is_promotion_active,
+    competitor_price,
+    season,
+    demand_forecast
+from dwh.demand_forecast_7d
 ;

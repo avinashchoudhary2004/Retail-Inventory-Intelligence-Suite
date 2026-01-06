@@ -1,12 +1,11 @@
 /* ================================================================================
-   BATCH UPDATE SCRIPT (Fixed & Validated)
-   Logic: Run daily @ 2:00 AM to process T-1 (Yesterday's) data
+   BATCH UPDATE SCRIPT
+   Logic: Run daily @ 1:00 AM to process yesterday's data
    ================================================================================ */
 
 BEGIN;
-
     -- STEP 1: CREATE TEMPORARY STAGING AREA
-    -- filtering for Yesterday's date (since job runs at 2 AM)
+    -- filtering for last date to apppend in the tables with new data
     CREATE TEMP TABLE tmp_daily_batch AS
     SELECT * 
 	FROM raw.inventory_dump
@@ -82,6 +81,28 @@ BEGIN;
     JOIN dwh.dim_product p ON r."Product ID" = p.product_id
     ON CONFLICT (date_key, store_key, product_key) 
     DO NOTHING; 
+
+    -- Step 4: UPDATING DEMAND FORECAST (7-DAY FUTURE SNAPSHOT)
+    Truncate dwh.demand_forecast_7d;
+
+    INSERT INTO dwh.demand_forecast_7d (forecasted_on, full_date, store_id, product_id, category, region, selling_price, discount_applied, weather_condition, is_promotion_active, competitor_price, season, demand_forecast)
+    SELECT
+        TO_DATE("Forecasted On", 'DD/MM/YY') as forecasted_on,
+        TO_DATE("Date", 'DD/MM/YY') as full_date,
+        "Store ID" as store_id,
+        "Product ID" as product_id,
+        "Category" as category,
+        "Region" as region,
+        NULLIF("Price", '')::DECIMAL(10,2) as selling_price,
+        NULLIF("Discount", '')::DECIMAL(10,2) as discount_applied,
+        "Weather Condition" as weather_condition,
+        CASE WHEN "Holiday/Promotion" = '1' THEN TRUE 
+            ELSE FALSE 
+        END as is_promotion_active,
+        NULLIF("Competitor Pricing", '')::DECIMAL(10,2) as competitor_price,
+        "Seasonality" as season,
+        NULLIF("Demand Forecast", '')::DECIMAL(10,2) as demand_forecast
+    FROM raw.demand_forecast_7d;
     
     -- Clean up
     DROP TABLE tmp_daily_batch;
