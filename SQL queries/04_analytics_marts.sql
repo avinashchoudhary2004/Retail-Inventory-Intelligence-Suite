@@ -126,12 +126,12 @@ SELECT
         WHEN DoS > 4 THEN 'Overstocked'
     END AS inventory_health_status,
 	CASE
-        WHEN running_total > inventory_level AND DoS < 1 THEN 'Order more and deliver by tomorrow'
-        WHEN running_total > inventory_level AND DoS >= 1 THEN 'Deliver by tomorrow'
+        WHEN running_total > inventory_level AND DoS < 1 THEN 'Order more and delivery by tomorrow'
+        WHEN running_total > inventory_level AND DoS >= 1 THEN 'Delivery by tomorrow'
         WHEN DoS >= 1 AND DoS < 2 THEN 'Order more'
-        WHEN DoS > 4 AND units_ordered > 0 THEN 'Cancel or reduce order'
-        WHEN DoS > 4 AND units_ordered = 0 THEN 'Run discount'
-        ELSE 'No action'
+        WHEN DoS > 4 AND units_ordered > 0 THEN 'Cancel existing order and apply discount'
+        WHEN DoS > 4 AND units_ordered = 0 THEN 'Apply discount'
+        ELSE 'No action required'
     END AS inventory_action_required,
 	CASE
         WHEN running_total > inventory_level AND DoS < 1 THEN 1
@@ -161,12 +161,12 @@ SELECT
         ELSE ROUND(100*ABS(f.demand_forecast - f.units_sold)::DECIMAL / f.units_sold,2)
     END AS error_pct,
     CASE 
-        WHEN f.units_sold = 0 AND f.demand_forecast = 0 THEN 'ACCURATE'
-        WHEN f.units_sold = 0 AND f.demand_forecast > 0 THEN 'OVER-FORECAST'
-        WHEN f.demand_forecast = 0 AND f.units_sold > 0 THEN 'UNDER-FORECAST'
-        WHEN ((f.demand_forecast - f.units_sold)::DECIMAL / f.units_sold) > 0.20 THEN 'OVER-FORECAST'
-        WHEN ((f.demand_forecast - f.units_sold)::DECIMAL / f.units_sold) < -0.20 THEN 'UNDER-FORECAST'
-        ELSE 'ACCURATE'
+        WHEN f.units_sold = 0 AND f.demand_forecast = 0 THEN 'accurate'
+        WHEN f.units_sold = 0 AND f.demand_forecast > 0 THEN 'over-forecast'
+        WHEN f.demand_forecast = 0 AND f.units_sold > 0 THEN 'under-forecast'
+        WHEN ((f.demand_forecast - f.units_sold)::DECIMAL / f.units_sold) > 0.10 THEN 'over-forecast'
+        WHEN ((f.demand_forecast - f.units_sold)::DECIMAL / f.units_sold) < -0.10 THEN 'under-forecast'
+        ELSE 'accurate'
     END AS accuracy_status
 FROM dwh.fct_inventory_daily f
 JOIN dwh.dim_date d ON f.date_key = d.date_key
