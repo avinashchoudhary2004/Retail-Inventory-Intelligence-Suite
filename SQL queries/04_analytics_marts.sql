@@ -85,6 +85,7 @@ WITH max_fact_date AS (
 		f.units_ordered,
 	    f.inventory_level + f.units_ordered AS effective_inventory_level,
 		n.full_date AS forecasted_for,
+        n.demand_forecast,
 	    sum(n.demand_forecast) over(partition by s.store_id, p.product_id order by n.full_date) as running_total,
 		row_number() over(partition by s.store_id, p.product_id order by n.full_date) as rn,
 		CASE
@@ -102,9 +103,15 @@ WITH max_fact_date AS (
 	SELECT
 		store_id,
 		product_id,
-		MIN(round(rn + (running_total - effective_inventory_level)/running_total,1)) AS DoS
+		Round(MIN(
+                CASE WHEN rn = 1 THEN ROUND(effective_inventory_level / NULLIF(demand_forecast, 0), 1)
+                    WHEN rn = 7 and is_less_than_demand = False THEN 7.0 + ((effective_inventory_level - running_total) / NULLIF(running_total / 7.0, 0))
+                    Else ROUND((rn - 1) + greatest(effective_inventory_level - (running_total - demand_forecast), 0)/ NULLIF(demand_forecast, 0), 1)
+                END 
+            ) 
+        , 2) as DoS
 	FROM forecasted_demand
-	WHERE is_less_than_demand = True
+	WHERE is_less_than_demand = True OR (rn = 7 AND is_less_than_demand = False)
 	GROUP BY 1,2
 )
 SELECT 
@@ -149,40 +156,43 @@ WHERE rn = 1
 CREATE OR REPLACE VIEW rpt.forecast_deviation AS
 SELECT 
     d.full_date,
-    s.store_id,
-    s.region,
-    p.product_id,
-	p.category,
-    f.units_sold AS actual_sold,
-    round(f.demand_forecast,2) AS forecasted_demand,
-    round(f.demand_forecast - f.units_sold, 2) AS deviation_units,
-    CASE 
-        WHEN f.units_sold = 0 THEN Null 
-        ELSE ROUND(100*ABS(f.demand_forecast - f.units_sold)::DECIMAL / f.units_sold,2)
-    END AS error_pct,
-    CASE 
-        WHEN f.units_sold = 0 AND f.demand_forecast = 0 THEN 'accurate'
-        WHEN f.units_sold = 0 AND f.demand_forecast > 0 THEN 'over-forecast'
-        WHEN f.demand_forecast = 0 AND f.units_sold > 0 THEN 'under-forecast'
-        WHEN ((f.demand_forecast - f.units_sold)::DECIMAL / f.units_sold) > 0.10 THEN 'over-forecast'
-        WHEN ((f.demand_forecast - f.units_sold)::DECIMAL / f.units_sold) < -0.10 THEN 'under-forecast'
-        ELSE 'accurate'
-    END AS accuracy_status
+    trim(s.store_id) as store_id,
+    trim(p.product_id) as product_id,
+	trim(p.category) as category,
+    f.units_sold,
+    round(f.demand_forecast,2) AS demand_forecast,
+    round(f.demand_forecast - f.units_sold, 2) AS units_deviation,
+    f.selling_price as price,
+    f.discount_applied as discount,
+    f.is_promotion_active,
+    f.weather_condition,
+    d.season as seaonality,
+    f.competitor_price,
+	trim(
+        CASE 
+            WHEN f.units_sold = 0 AND f.demand_forecast = 0 THEN 'accurate'
+            WHEN f.units_sold = 0 AND f.demand_forecast > 0 THEN 'over-forecast'
+            WHEN f.demand_forecast = 0 AND f.units_sold > 0 THEN 'under-forecast'
+            WHEN ((f.demand_forecast - f.units_sold)::DECIMAL / f.units_sold) > 0.10 THEN 'over-forecast'
+            WHEN ((f.demand_forecast - f.units_sold)::DECIMAL / f.units_sold) < -0.10 THEN 'under-forecast'
+            ELSE 'accurate'
+        END 
+    ) AS forecast_accuracy_flag
 FROM dwh.fct_inventory_daily f
 JOIN dwh.dim_date d ON f.date_key = d.date_key
 JOIN dwh.dim_store s ON f.store_key = s.store_key
 JOIN dwh.dim_product p ON f.product_key = p.product_key
+ORDER BY full_date, store_id, product_id ASC
 ;
 
 -- 5. Next 7d forecast
-CREATE OR REPLACE VIEW rpt.next_7d_demand AS
 SELECT 
     forecasted_on,
     full_date,
-    store_id,
-    product_id,
-    category,
-    region,
+    trim(store_id) as store_id,
+    trim(product_id) as product_id,
+    trim(category) as category,
+	trim(region) as region,
     selling_price,
     discount_applied,
     weather_condition,
@@ -190,5 +200,6 @@ SELECT
     competitor_price,
     season,
     demand_forecast
-from dwh.demand_forecast_7d
+FROM dwh.demand_forecast_7d
+ORDER BY full_date, store_id, product_id ASC
 ;
