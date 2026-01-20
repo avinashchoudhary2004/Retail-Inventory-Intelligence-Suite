@@ -6,16 +6,21 @@ import datetime
 from pathlib import Path
 import psycopg2
 from sqlalchemy import create_engine, text
+import sys
 
 # Import your local generator script
 from scripts.data_generator import generate_daily_batch, generate_forecast_batch
 from scripts.config.db_config import DB_CONFIG
 
+# Importing model files
+BASE_DIR = Path(__file__).parent.parent 
+sys.path.insert(0, str(BASE_DIR / "ML model"))
+import model
+
 # Construct Connection String using the imported credentials
 DB_CONN_STR = f"postgresql+psycopg2://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}"
 
 # 2. File Paths
-BASE_DIR = Path(__file__).parent.parent 
 DATA_DIR = BASE_DIR / "data"
 SQL_DIR = BASE_DIR / "SQL queries"
 LOG_DIR = BASE_DIR / "logs"
@@ -39,6 +44,9 @@ console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 logging.getLogger('').addHandler(console)
 
+# Function to check if the date is last day of the month
+def is_last_day_of_month(simulation_date):
+    return (simulation_date + datetime.timedelta(days=1)).month != simulation_date.month
 
 # ------------------- PIPELINE STEPS ---------------
 
@@ -168,6 +176,23 @@ def step_5_updating_analytics_tables(engine):
     except Exception as e:
         logging.error(f"Updating reporting tables failed: {e}")
 
+def step_6_run_ml_pipeline(simulation_date):
+    logging.info("--- [STEP 6] Running ML Pipeline ---")
+    
+    try:
+        if is_last_day_of_month(simulation_date):
+            success = model.run_ml_pipeline(simulation_date)
+        else:
+            success = model.run_ml_pipeline()
+
+        if success:
+            logging.info("ML Pipeline completed successfully")
+        else:
+            logging.error("ML Pipeline failed")
+            raise Exception("ML Pipeline failed")
+    except Exception as e:
+        logging.error(f"ML Pipeline error: {e}")
+        raise e
 
 # MAIN
 def run_pipeline(simulation_date):
@@ -184,6 +209,7 @@ def run_pipeline(simulation_date):
             step_3_run_transformations(engine)
             step_4_archive_file(processed_file)
             step_5_updating_analytics_tables(engine)
+            step_6_run_ml_pipeline(simulaton_date)
             
         logging.info("=== ETL PIPELINE SUCCESS ===")
         
