@@ -39,8 +39,7 @@ UrbanRetail Co., a high-velocity retail chain, is experiencing significant profi
 
 ## Meet the Team
 - **Avinash Choudhary** - **Lead Product Analyst & Engineer**: Owned the end-to-end product lifecycle. Translated business pain points into technical requirements, designed the database architecture, defined strategic risk KPIs, and built the decision-support dashboard.
-- **Abhishek Choudhary** - **Machine Learning Engineer** Developed and tuned the XGBoost forecasting model to detect demand bias and quantify prediction risk ......
-
+- **Abhishek Choudhary** - **Machine Learning Engineer** Designed and built an end-to-end ELT pipeline, training and tuning XGBoost and Linear SVC models to forecast demand bias and quantify prediction risk. Evaluated model performance using accuracy-based metrics and selected the optimal model to support reliable, data-driven decision-making. 
 
 ## Solution Overview
 This project builds an end-to-end *Prescriptive Inventory Decision Engine*, starting with a Python-based *ELT pipeline* that transforms raw OLTP transaction logs into a high-performance *Star Schema data warehouse (PostgreSQL)*. *Business-critical KPIs* such as Projected Stockout Loss, Critical Coverage Ratio, and Forecast WAPE are computed using SQL-based *OLAP views*. An external XGBoost forecast bias classifier is integrated to contextualize demand signals and flag unreliable predictions. 
@@ -213,7 +212,7 @@ python main.py
 ## Contacts
 Contributions are welcome! Please fork the repository and submit a pull request. For any questions or support, contact:
 1. **Avinash Choudhary**: avinashchoudhary20040@gmail.com
-2. **Abhishek Choudhary**: [abhishek.email@example.com] (replace with actual email)
+2. **Abhishek Choudhary**: [abhic.fin@gmail.com] (replace with actual email)
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
