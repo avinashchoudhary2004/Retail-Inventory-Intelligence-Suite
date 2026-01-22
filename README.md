@@ -5,7 +5,7 @@
 ![Type](https://img.shields.io/badge/Architecture-ELT-purple)
 ![Status](https://img.shields.io/badge/Status-Completed-green)
 
-**An end-to-end data analytics platform engineered to solve the "Overstock vs. Stockout" dilemma in high-velocity retail retail supply chains.**
+**An end-to-end data analytics platform engineered to solve the "Overstock vs. Stockout" dilemma in high-velocity retail supply chains.**
 
 This project operationalizes raw logistics data into a prescriptive decision engine, integrating automated ELT pipelines, business-centric KPIs, and XGBoost predictive modeling. It is designed to shift supply chain operations from reactive firefighting to proactive profit optimization.
 
@@ -117,7 +117,7 @@ To bridge the gap between **data visibility** and **decision-making**, five stra
 These KPIs convert raw forecasts and inventory positions into **prioritized actions**, enabling faster decisions with measurable financial impact.
 
 ### Step 4: ML Model
-An XGBoost-based forecast bias classifier is integrated to enhance demand signal accuracy. The model, trained in `ML model/model.zz/train.py`, analyzes historical forecast deviations to predict bias (over-forecast vs. under-forecast). Outputs are stored in `predictions_output.csv` and ingested into the pipeline for KPI contextualization. Performance is audited via `Forecast Deviation.csv`, ensuring reliable predictions and reducing manual overrides.
+Trained Xgboost and SVC linear classfier model using grid search method to classify the demand forecasted bias, selected the best model based on maximum F1 score, then applied an F1-optimized probability threshold (instead of 0.5) to handle class imbalance and control the precision–recall tradeoff. The trained models and artifacts were saved using joblib for direct reuse in the ELT pipeline. Using the saved models, I predicted the next 7-day forecast accuracy flags (over-forecast, under-forecast, accurate) to identify bias in demand forecasts, and updated the ELT pipeline to retrain only monthly (at month-end) and refresh 7-day predictions everyday on dashboard/data, which feed downstream dashboard KPIs.
 
 ### Step 5: Action-First Dashboard
 
