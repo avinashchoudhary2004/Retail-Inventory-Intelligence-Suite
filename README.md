@@ -3,7 +3,7 @@
 ![Python](https://img.shields.io/badge/Python-3.9-blue)
 ![SQL](https://img.shields.io/badge/PostgreSQL-18-orange)
 ![Type](https://img.shields.io/badge/Architecture-ELT-purple)
-![Status](https://img.shields.io/badge/Status-Pending-green)
+![Status](https://img.shields.io/badge/Status-Completed-green)
 
 **An end-to-end data analytics platform engineered to solve the "Overstock vs. Stockout" dilemma in high-velocity retail retail supply chains.**
 
@@ -27,7 +27,7 @@ UrbanRetail Co., a high-velocity retail chain, is experiencing significant profi
 
 ### Key Problem Statements
 
-* **Revenue Leakage:** frequent stockouts
+* **Revenue Leakage:** Frequent stockouts due to a lack of integrated analytics system and underutilization of data.
 
 * **Inflated Holding Costs:** Systemic overstocking is driving up storage costs and trapping working capital in slow-moving inventory.
 
@@ -38,8 +38,8 @@ UrbanRetail Co., a high-velocity retail chain, is experiencing significant profi
 * **Data Underutilization:** Rich sales and logistics datasets remain siloed and descriptive, failing to drive algorithmic optimization.
 
 ## Meet the Team
-- **Avinash Choudhary** - **Lead Product Analyst & Engineer**: Owned the end-to-end product lifecycle. Translated business pain points into technical requirements, designed the database architecture, defined strategic risk KPIs, and built the decision-support dashboard.
-- **Abhishek Choudhary** - **Machine Learning Engineer**: Designed and built an end-to-end ELT pipeline, training and tuning XGBoost and Linear SVC models to forecast demand bias and quantify prediction risk. Evaluated model performance using accuracy-based metrics and selected the optimal model to support reliable, data-driven decision-making. 
+- **Avinash Choudhary** - **Lead Product Analyst & Engineer**
+- **Abhishek Choudhary** - **Machine Learning Engineer**
 
 ## Solution Overview
 This project builds an end-to-end *Prescriptive Inventory Decision Engine*, starting with a Python-based *ELT pipeline* that transforms raw OLTP transaction logs into a high-performance *Star Schema data warehouse (PostgreSQL)*. *Business-critical KPIs* such as Projected Stockout Loss, Critical Coverage Ratio, and Forecast WAPE are computed using SQL-based *OLAP views*. An external XGBoost forecast bias classifier is integrated to contextualize demand signals and flag unreliable predictions. 
@@ -50,7 +50,7 @@ All analytical intelligence is consolidated into an Action-First Dashboard for s
 - **Automated ELT Pipeline:** Orchestrates the extraction, loading, and transformation of raw logs into a normalized Star Schema warehouse.
 - **Modular Data Architecture:** Organized into clear layers (Raw $\to$ DWH $\to$ Reporting) with robust configuration management and execution logging.
 - **Business-Centric KPIs:** Defined key KPIs, each mapped to business problems like Projected Stockout Loss and Forecast Reliability Score.
-- **ML-Driven Forecast Audit:** Integrates an XGBoost classifier to detect forecast bias (Over/Under-estimation), flagging unreliable predictions before they impact ordering. ......
+- **ML-Driven Forecast Audit:** Integrates an XGBoost classifier to detect forecast bias (Over/Under-estimation), flagging unreliable predictions.
 - **Action-First Dashboard:**  Prescriptive, action-first dashboard enabling store managers to proactively manage stockouts, overstock, and replenishment.
 
 
@@ -110,8 +110,8 @@ To bridge the gap between **data visibility** and **decision-making**, five stra
 | **Projected Stockout Loss (Next 24h)**     | Immediate revenue lost if SKUs stock out before replenishment    | Revenue at risk from predicted inventory shortfall in next 24 hours                        | $\small \max(\text{Next Day forecast} - \text{On Hand Inventory},0)\times\text{Unit Price}$                                                                                                                                                                                                                                              | Prioritize emergency replenishment by **revenue impact**; expedite on-order deliveries.                       |
 | **Low Inventory SKUs (DoS < 2)**           | Service-level risk for SKUs likely to stock out within lead time | % of SKUs with inventory coverage below a 2-day safety threshold                           | $\small DoS = \text{Full Days Covered} + \dfrac{\text{Remaining Inventory}}{\text{Demand of Next Partial Day}}$                                                                                                                                                                                                                          | Increase on-order quantities for SKUs with DoS < 2.                                                           |
 | **Capital Locked in Overstock (DoS > 4)**  | Working capital tied in excess inventory, raising holding cost   | Monetary value of inventory beyond a 4-day efficient supply cap                            | $\small (\text{Total Inventory} - \text{Total 4 days demand}) \times \text{Unit Price}$                                                                                                                                                                                                                                                  | Target SKUs for markdowns, promotions, or redistribution.                                                     |
-| **Inventory Velocity (Avg Life on Shelf)** | Slow movers create dead stock and clutter shelf space            | Avg days an SKU sits in inventory before sale                                              | $\displaystyle \text{Turnover}=\frac{\sum_i(\text{Turnover}*i\times\text{UnitsSold}*{i,30})}{\sum_i\text{UnitsSold}_{i,30}}$<br><br>$\displaystyle \text{Avg Life on Shelf}=\frac{30}{\text{Turnover}}$                                                                                                                                  | Fast movers → expand shelf space & shorten reorder cycles.<br>Slow movers → clearance, delist, or reallocate. |
-| **Forecast Reliability Score (WAPE)**      | Low trust in forecasts causes manual overrides and stock risk    | Volume-weighted forecast error emphasizing high-selling SKUs and error direction/frequency | $\small\text{Portfolio KPI}=\dfrac{\sum (\text{WAPE}_i\times\text{UnitsSold}*i)}{\sum \text{UnitsSold}*i}$<br><br>$\small\text{WAPE}*{\text{over}}=\dfrac{\sum*{F_t>A_t}(\text{WAPE}_i\times\text{UnitsSold}*i)}{\sum*{F_t>A_t}\text{UnitsSold}*i}$<br><br>$\displaystyle \text{Freq}*{\text{over}}=\dfrac{\sum \mathbf{1}(F_t>A_t)}{N}$ | Adjust safety stock by measured risk; monitor over/under frequencies; fix model issues promptly.              |
+| **Inventory Velocity (Avg Life on Shelf)** | Slow movers create dead stock and clutter shelf space            | Avg days an SKU sits in inventory before sale                                              | <div align="center"><img src="https://latex.codecogs.com/svg.latex?\begin{gathered}\text{Turnover}=\frac{\sum_i(\text{Turnover}_i\times\text{UnitsSold}_{i,30})}{\sum_i\text{UnitsSold}_{i,30}}\\[2ex]\text{Avg Life on Shelf}=\frac{30}{\text{Turnover}}\end{gathered}" title="Turnover and Shelf Life Formulas" /></div>                                                                                                                                  | Fast movers → expand shelf space & shorten reorder cycles.<br>Slow movers → clearance, delist, or reallocate. |
+| **Forecast Reliability Score (WAPE)**      | Low trust in forecasts causes manual overrides and stock risk    | Volume-weighted forecast error emphasizing high-selling SKUs and error direction/frequency | <div align="center"><img src="https://latex.codecogs.com/svg.latex?\begin{gathered}\text{Portfolio KPI}=\frac{\sum(\text{WAPE}_i\times\text{UnitsSold}_i)}{\sum\text{UnitsSold}_i}\\[2ex]\text{WAPE}_{\text{over}}=\frac{\sum_{F_t>A_t}(\text{WAPE}_i\times\text{UnitsSold}_i)}{\sum_{F_t>A_t}\text{UnitsSold}_i}\\[2ex]\text{Freq}_{\text{over}}=\frac{\sum\mathbf{1}(F_t>A_t)}{N}\end{gathered}" title="Portfolio and Forecast KPIs" /></div> | Adjust safety stock by measured risk; monitor over/under frequencies; fix model issues promptly.              |
 
 **Outcome:**  
 These KPIs convert raw forecasts and inventory positions into **prioritized actions**, enabling faster decisions with measurable financial impact.
