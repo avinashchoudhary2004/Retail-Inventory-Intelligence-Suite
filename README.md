@@ -212,7 +212,7 @@ python main.py
 ## Contacts
 Contributions are welcome! Please fork the repository and submit a pull request. For any questions or support, contact:
 1. **Avinash Choudhary**: avinashchoudhary20040@gmail.com
-2. **Abhishek Choudhary**: [abhic.fin@gmail.com] (replace with actual email)
+2. **Abhishek Choudhary**: abhic.fin@gmail.com
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
